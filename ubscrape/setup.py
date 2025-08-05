@@ -13,7 +13,7 @@ setup(
         'console_scripts': ['ubscrape = ubscrape.command_line:main']
     },
     install_requires=[
-        'bs4',
+        'beautifulsoup4',
         'requests'
     ],
 )
