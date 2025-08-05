@@ -67,8 +67,8 @@ class CsvWriter:
 
         with open(filepath, 'w') as file:
             writer = csv.writer(file, delimiter='\t')
-           # Write header row
-           writer.writerow(['word', 'definition', 'thumbs_up'])
+            # Write header row
+            writer.writerow(['word', 'definition', 'thumbs_up'])
             writer.writerows(self.rows)
 
         self.filesdumped += 1
