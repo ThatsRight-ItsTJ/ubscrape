@@ -1,4 +1,3 @@
-import multiprocessing as mp
 from typing import List, Tuple, Optional
 
 from bs4 import BeautifulSoup
@@ -94,9 +93,6 @@ def write_definition(word_t: Tuple[str]) -> Optional[Tuple[str, int]]:
 
 
 def define_all_words():
-    pool = mp.Pool(mp.cpu_count())
-
     words = CON.execute(
         'SELECT word FROM word WHERE complete = 0').fetchall()
 
-    pool.map(write_definition, words, chunksize=200)
