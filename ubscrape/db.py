@@ -24,6 +24,7 @@ def initialize_db():
     id integer PRIMARY KEY,
     word_id text NOT NULL,
     definition text NOT NULL,
+    thumbs_up integer NOT NULL DEFAULT 0,
     FOREIGN KEY (word_id) REFERENCES word (word)
     );''')
 
@@ -63,18 +64,19 @@ def dump_database(arg, csv=False):
     definition_set = set()
 
     query = 'SELECT word.word, definition.definition FROM definition INNER JOIN word ON definition.word_id=word.word ORDER BY word.word ASC;'
+    query = 'SELECT word.word, definition.definition, definition.thumbs_up FROM definition INNER JOIN word ON definition.word_id=word.word ORDER BY word.word ASC;'
 
-    for (word, definition) in con.execute(query).fetchall():
+    for (word, definition, thumbs_up) in con.execute(query).fetchall():
         if word == prev_word:
             # add to the same set
-            definition_set.add(definition)
+            definition_set.add((definition, thumbs_up))
 
         if word != prev_word:
             # dump this definition and start a new set
             writer.write_word(prev_word, definition_set)
 
             prev_word = word
-            definition_set = set([definition])
+            definition_set = set([(definition, thumbs_up)])
 
     writer.write_word(prev_word, definition_set)
     writer.dump_pool()

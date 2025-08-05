@@ -92,9 +92,13 @@ def main():
     elif args.tsv:
         dump_database(args.dump, csv=True)
     elif args.define:
-        definitions = write_definition((args.define,))
-        if definitions:
-            print(definitions)
+        result = write_definition((args.define,))
+        if result:
+            definition, thumbs_up = result
+            print(f"Definition: {definition}")
+            print(f"Thumbs up: {thumbs_up}")
+        else:
+            print("No definition found.")
     elif args.define_all:
         define_all_words()
     elif args.clear:

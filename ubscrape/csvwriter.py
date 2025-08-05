@@ -4,7 +4,7 @@ module: `csvwriter` exposes a class CsvWriter that writes Urban Dictionary words
 
 import csv
 import os
-from typing import List, Set
+from typing import List, Set, Tuple
 
 
 class CsvWriter:
@@ -27,15 +27,19 @@ class CsvWriter:
         else:
             self.path = out
 
-    def write_word(self, word: str, definitions: Set[str]):
+    def write_word(self, word: str, definitions: Set[Tuple[str, int]]):
         '''
-        Adds a word and writes to file if >1000 words.
+        Adds a word with its best definition and thumbs up count, writes to file if >1000 words.
         '''
 
         # check if both word and definitions are non-empty
         if word and definitions:
-            # add the word to the pool.
-            self.rows.append([word] + list(definitions))
+            # Since we now only have one definition per word (the one with most thumbs up),
+            # we can take the first (and only) item from the set
+            if definitions:
+                definition, thumbs_up = next(iter(definitions))
+                # add the word, definition, and thumbs up count to the pool
+                self.rows.append([word, definition, thumbs_up])
 
             # if we have 1000 words, dump them
             if len(self.rows) >= self.limit:
@@ -63,6 +67,8 @@ class CsvWriter:
 
         with open(filepath, 'w') as file:
             writer = csv.writer(file, delimiter='\t')
+           # Write header row
+           writer.writerow(['word', 'definition', 'thumbs_up'])
             writer.writerows(self.rows)
 
         self.filesdumped += 1

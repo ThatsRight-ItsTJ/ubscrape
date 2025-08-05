@@ -1,7 +1,7 @@
 import json
 from functools import reduce
 import os
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Tuple, Union
 from string import ascii_lowercase
 
 
@@ -17,7 +17,7 @@ def get_letter(word: str) -> str:
 
 class JsonWriter:
     def __init__(self, limit=1, out='results'):
-        self.pool: Dict[str, List[str]] = {}
+        self.pool: Dict[str, Dict[str, Union[str, int]]] = {}
         self.limit: int = limit
         self.first_word: str = ''
         self.last_word: str = ''
@@ -26,7 +26,7 @@ class JsonWriter:
         else:
             self.path = out
 
-    def write_word(self, word: str, definitions: Set[str]):
+    def write_word(self, word: str, definitions: Set[Tuple[str, int]]):
         if word and definitions:
             if self.first_word and get_letter(word) != get_letter(self.first_word):
                 self.dump_pool()
@@ -34,7 +34,14 @@ class JsonWriter:
             if not self.pool.keys():
                 self.first_word = word
 
-            self.pool[word] = list(definitions)
+            # Since we now only have one definition per word (the one with most thumbs up),
+            # we can take the first (and only) item from the set
+            if definitions:
+                definition, thumbs_up = next(iter(definitions))
+                self.pool[word] = {
+                    'definition': definition,
+                    'thumbs_up': thumbs_up
+                }
 
             self.last_word = word
 
@@ -61,9 +68,9 @@ class JsonWriter:
 
     def size(self) -> int:
         def reduce_f(total_len: int, word: str):
-            defs: List[str] = self.pool[word]
+            word_data: Dict[str, Union[str, int]] = self.pool[word]
+            definition = word_data['definition']
 
-            return total_len + len(word) + reduce(lambda total, definition: total +
-                                                  len(definition), defs, 4 * len(defs))
+            return total_len + len(word) + len(str(definition)) + 20  # extra space for thumbs_up field
 
         return reduce(reduce_f, self.pool, 2)
