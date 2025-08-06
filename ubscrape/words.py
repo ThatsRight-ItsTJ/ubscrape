@@ -27,11 +27,17 @@ def write_words_for_letter(prefix: str):
 
     letter = prefix.upper()
 
-    page_num: int = CON.execute(
+    # Check if we have any existing data for this letter
+    existing_page = CON.execute(
         'SELECT max(page_num) FROM word WHERE letter = ?', (letter,)).fetchone()[0]
 
-    if not page_num:
+    if not existing_page:
         page_num = 1
+        print(f'Starting fresh scraping for letter {letter}')
+    else:
+        # Resume from the last page we were working on
+        page_num = existing_page
+        print(f'Resuming scraping for letter {letter} from page {page_num}')
 
     url = make_url()
     req = requests.get(url)

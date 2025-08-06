@@ -1,9 +1,47 @@
+import os
 import argparse
 
 from .definitions import define_all_words, write_definition
 from .words import write_all_words
-from .db import clear_database, dump_database, get_connection
+from .db import clear_database, dump_database, get_connection, DB_FILE_NAME
 from .constants import VERSION
+
+
+def check_existing_database():
+    """Check if database exists and report current state"""
+    if os.path.exists(DB_FILE_NAME):
+        con = get_connection()
+        
+        # Count total words and completed words
+        total_words = con.execute('SELECT COUNT(*) FROM word').fetchone()[0]
+        completed_words = con.execute('SELECT COUNT(*) FROM word WHERE complete = 1').fetchone()[0]
+        incomplete_words = total_words - completed_words
+        
+        # Count words by letter to show progress
+        letter_progress = con.execute('''
+            SELECT letter, 
+                   COUNT(*) as total, 
+                   SUM(complete) as completed,
+                   MAX(page_num) as last_page
+            FROM word 
+            GROUP BY letter 
+            ORDER BY letter
+        ''').fetchall()
+        
+        print(f'Found existing database with {total_words} words total')
+        print(f'  - {completed_words} words defined')
+        print(f'  - {incomplete_words} words still need definitions')
+        print('\nProgress by letter:')
+        
+        for letter, total, completed, last_page in letter_progress:
+            completion_rate = (completed / total * 100) if total > 0 else 0
+            print(f'  {letter}: {completed}/{total} words ({completion_rate:.1f}%) - last page: {last_page}')
+        
+        print('\nScraping will resume from where it left off...\n')
+        return True
+    else:
+        print('No existing database found. Starting fresh scrape...\n')
+        return False
 
 
 def report_progress():
@@ -25,6 +63,7 @@ def report_progress():
 
 
 def scrape():
+    check_existing_database()
     write_all_words()
     define_all_words()
 
@@ -109,6 +148,7 @@ def main():
                 "Use --clear [-c] with --force [-f] to COMPLETELY DELETE the SQLite database.")
     elif not args.report and not args.version:
         print('No arguments detected. Continuing to scrape.')
+        check_existing_database()
         scrape()
 
 

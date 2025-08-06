@@ -93,6 +93,31 @@ def write_definition(word_t: Tuple[str]) -> Optional[Tuple[str, int]]:
 
 
 def define_all_words():
+    # Get all incomplete words, ordered by letter and word for consistent progress
     words = CON.execute(
         'SELECT word FROM word WHERE complete = 0').fetchall()
+    
+    total_incomplete = len(words)
+    if total_incomplete == 0:
+        print('All words have been defined!')
+        return
+    
+    print(f'Found {total_incomplete} words that need definitions. Resuming...')
+    
+    # Process words one by one
+    for i, word_tuple in enumerate(words, 1):
+        word = word_tuple[0]
+        print(f'Defining word {i}/{total_incomplete}: {word}')
+        
+        try:
+            result = write_definition(word_tuple)
+            if result:
+                definition, thumbs_up = result
+                print(f'  ✓ Found definition with {thumbs_up} thumbs up')
+            else:
+                print(f'  ✗ No definition found')
+        except Exception as e:
+            print(f'  ✗ Error defining {word}: {e}')
+            # Continue with next word instead of crashing
+            continue
 
