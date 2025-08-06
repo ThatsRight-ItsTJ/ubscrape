@@ -36,9 +36,14 @@ def write_words_for_letter(prefix: str):
     url = make_url()
     req = requests.get(url)
 
-    while req.url != 'https://www.urbandictionary.com/':
+    while req.url != 'https://www.urbandictionary.com/' and req.status_code == 200:
         soup = BeautifulSoup(req.text, features="html.parser")
         a_tags = soup.find_all('a', href=re.compile(r'/define.php'))
+
+        # If no definition links found, we've reached the end
+        if not a_tags:
+            print(f'No more words found for letter {letter}. Finished at page {page_num - 1}.')
+            break
 
         pattern = re.compile(
             r'\/define\.php\?term=(.*)')
@@ -69,6 +74,11 @@ def write_words_for_letter(prefix: str):
         page_num += 1
         url = make_url()
         req = requests.get(url)
+        
+        # Additional safety check - if we get redirected or error, stop
+        if req.status_code != 200:
+            print(f'Received status code {req.status_code} for letter {letter} page {page_num}. Stopping.')
+            break
 
 
 def write_all_words():
