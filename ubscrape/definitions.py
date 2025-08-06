@@ -6,8 +6,6 @@ import requests
 from .constants import BASE_URL
 from .db import initialize_db
 
-CON = initialize_db()
-
 
 def define_word(word: str) -> Optional[Tuple[str, int]]:
     """
@@ -68,6 +66,7 @@ def define_word(word: str) -> Optional[Tuple[str, int]]:
 def write_definition(word_t: Tuple[str]) -> Optional[Tuple[str, int]]:
     # word will always be a tuple when this function is called from define_all_words().
     # so in `cli.py`, we make word a tuple to match the type signature.
+    con = initialize_db()
     word = word_t[0]
 
     # Note: this code will always make a network request.
@@ -77,25 +76,31 @@ def write_definition(word_t: Tuple[str]) -> Optional[Tuple[str, int]]:
     
     if result is None:
         # Mark word as complete even if no definition found
-        CON.execute('UPDATE word SET complete = 1 WHERE word = ?', word_t)
-        CON.commit()
+        con.execute('UPDATE word SET complete = 1 WHERE word = ?', word_t)
+        con.commit()
+        con.close()
         return None
     
     definition, thumbs_up = result
 
-    CON.executemany(
+    con.executemany(
         'INSERT INTO definition(definition, word_id, thumbs_up) VALUES (?, ?, ?)', 
         [(definition, word, thumbs_up)])
-    CON.execute('UPDATE word SET complete = 1 WHERE word = ?', word_t)
-    CON.commit()
+    con.execute('UPDATE word SET complete = 1 WHERE word = ?', word_t)
+    con.commit()
+    con.close()
 
     return result
 
 
 def define_all_words():
+    con = initialize_db()
+    
     # Get all incomplete words, ordered by letter and word for consistent progress
-    words = CON.execute(
+    words = con.execute(
         'SELECT word FROM word WHERE complete = 0').fetchall()
+    
+    con.close()
     
     total_incomplete = len(words)
     if total_incomplete == 0:

@@ -13,12 +13,12 @@ from bs4 import BeautifulSoup
 from .constants import BASE_URL
 from .db import initialize_db
 
-CON = initialize_db()
-
 
 def write_words_for_letter(prefix: str):
     if not prefix:
         raise ValueError(f'Prefix {prefix} needs to be at least one letter.')
+
+    con = initialize_db()
 
     def make_url():
         if page_num > 1:
@@ -28,7 +28,7 @@ def write_words_for_letter(prefix: str):
     letter = prefix.upper()
 
     # Check if we have any existing data for this letter
-    existing_page = CON.execute(
+    existing_page = con.execute(
         'SELECT max(page_num) FROM word WHERE letter = ?', (letter,)).fetchone()[0]
 
     if not existing_page:
@@ -65,10 +65,10 @@ def write_words_for_letter(prefix: str):
             (w, 0, page_num, letter) for w in words]
 
         try:
-            CON.executemany(
+            con.executemany(
                 'INSERT INTO word(word, complete, page_num, letter) VALUES (?, ?, ?, ?)',
                 formatted_words)
-            CON.commit()
+            con.commit()
         except IntegrityError:
             # IntegrityError normally occurs when we try to
             # insert words that are already in the database.
@@ -85,6 +85,8 @@ def write_words_for_letter(prefix: str):
         if req.status_code != 200:
             print(f'Received status code {req.status_code} for letter {letter} page {page_num}. Stopping.')
             break
+    
+    con.close()
 
 
 def write_all_words():
